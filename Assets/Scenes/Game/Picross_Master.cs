@@ -4,17 +4,28 @@ using UnityEngine;
 
 public class Picross_Master : MonoBehaviour
 {
-	public Vector3Int gameSize = Vector3Int.one;
-	public GameObject blockPrefab;
-
 	private Vector3[] tilePositions;
 	private bool[] activeTiles;
 	private LayerMask maskBlocks;
+
+	public Vector3Int gameSize = Vector3Int.one;
+	public GameObject blockPrefab;
+	public Transform cameraFocus;
+
+	[Header("Camera")]
+	[Range(0f, 25f)] public float distance = 7f; //use pythag to set max distance based on cube corner
+	public float xSensitivity = 0.2f;
+	public float ySensitivity = 0.2f;
+	private float prevX = 0f; //Make it able to be negative for terrible control scheme opportunities
+	private float prevY = 0f;
 
 	private void Awake()
 	{
 		if (blockPrefab == null)
 			throw new UnityException("Block prefab not set");
+
+		if (cameraFocus == null)
+			throw new UnityException("Camera focus not set");
 
 		tilePositions = new Vector3[gameSize.x * gameSize.y * gameSize.z];
 		activeTiles = new bool[gameSize.x * gameSize.y * gameSize.z];
@@ -23,22 +34,39 @@ public class Picross_Master : MonoBehaviour
 
 	void Start()
 	{
-		Debug.Log(LayerMask.NameToLayer("Blocks"));
 		GenerateGrid();
 	}
 
 	void Update()
 	{
+		Ray clickRay = Camera.main.ScreenPointToRay(Input.mousePosition);
+
 		if (Input.GetMouseButtonDown(0))
 		{
-			Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-			Debug.DrawRay(ray.origin, ray.direction * 50f, Color.red);
-			if (Physics.Raycast(ray, out RaycastHit rayHit, 50f))
+			Debug.DrawRay(clickRay.origin, clickRay.direction * 50f, Color.magenta);
+			if (Physics.Raycast(clickRay, out RaycastHit rayHit, 50f))	//Layermasking didn't work so it was removed. Retry?
 			{
-				Debug.Log(rayHit.transform.name);
 				transform.Find(rayHit.transform.name).gameObject.SetActive(false);	
 			}
 		}
+
+		if (Input.GetMouseButtonDown(1))
+		{
+			Debug.DrawRay(clickRay.origin, clickRay.direction * 50f, Color.green);
+			if (Physics.Raycast(clickRay, out RaycastHit rayHit, 50f))
+			{
+				transform.Find((rayHit.transform.position + rayHit.normal).ToString()).gameObject.SetActive(true); //lol at error
+			}
+		}
+
+		if (Input.GetMouseButton(2))
+		{
+			cameraFocus.eulerAngles += new Vector3((prevX - Input.mousePosition.y) * xSensitivity, (Input.mousePosition.x - prevY) * ySensitivity, 0f);
+		}
+		prevX = Input.mousePosition.y;
+		prevY = Input.mousePosition.x;
+
+		//mouse scroll for back/forwards
 	}
 
 	void GenerateGrid()
