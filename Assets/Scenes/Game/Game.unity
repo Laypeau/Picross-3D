@@ -164,7 +164,7 @@ GameObject:
   - component: {fileID: 1851630535}
   - component: {fileID: 1851630534}
   m_Layer: 0
-  m_Name: Main Camera
+  m_Name: Camera
   m_TagString: MainCamera
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -201,7 +201,7 @@ Camera:
     y: 0
     width: 1
     height: 1
-  near clip plane: 0.3
+  near clip plane: 0.01
   far clip plane: 100
   field of view: 80
   orthographic: 0
@@ -268,9 +268,11 @@ MonoBehaviour:
   blockPrefab: {fileID: 8823054646639530745, guid: cb5aef49a8b90544a9ce102d59bababd,
     type: 3}
   cameraFocus: {fileID: 684428773}
-  distance: 7
-  xSensitivity: 0.2
-  ySensitivity: 0.2
+  minCamDistance: 0
+  mouseSensitivityX: 0.2
+  mouseSensitivityY: 0.2
+  rotateX: 15
+  rotateY: 15
 --- !u!4 &1930588450
 Transform:
   m_ObjectHideFlags: 0
