@@ -18,12 +18,15 @@ public class Picross_Master : MonoBehaviour
 	public GameObject blockPrefab;
 	public Transform cameraFocus;
 	private Transform gameCamera;
+	private bool mouseOverBlock;
 
 	[Header("Camera")]
 	public float minCamDistance; //remember that the game is moved by half the size
 	private float maxCamDistance;
 	public float zoomSensitivity = 1f;
-	private bool rotating = false;
+	private bool keyRotating = false;
+	private bool mouseRotating = false;
+	private int mouseButton = -1;
 	public float mouseSensitivityX = 0.3f;
 	public float mouseSensitivityY = 0.3f;
 	private float mousePrevX = 0f;
@@ -46,62 +49,113 @@ public class Picross_Master : MonoBehaviour
 		maskBlocks = 8;
 	}
 
-	// fix the camera snapping on start
-	// camera move when shift+mouse0 or mouseDown0 when not over blocks
-	// merge mousedown 0 and 1 input statements
-	// Create UI colour selector
-	//	- use vertex colours
+	// make file saving chop off empty faces on the ends
+
+	// make camera focus to object center instead of master transform
+	// make camera lerp to position when setup
+	// make camera store a percentage as it's local zdistance
+
+	// Make mouse loop across screen
+	// make keyboard camera controls look up an animation curve
+
 
 	void Update()
 	{
-		Ray clickRay = Camera.main.ScreenPointToRay(Input.mousePosition);
+		Ray blockRay = Camera.main.ScreenPointToRay(Input.mousePosition);
+		Debug.DrawRay(blockRay.origin, blockRay.direction * 50f);
+		if (Physics.Raycast(blockRay, out RaycastHit rayHit, 50f)) // try using maskBlocks as a layermask
+			mouseOverBlock = true;
+		else
+			mouseOverBlock = false;
+
+		Debug.Log(mouseOverBlock);
 
 		if (Input.GetMouseButtonDown(0))
 		{
-			Debug.DrawRay(clickRay.origin, clickRay.direction * 50f, Color.magenta);
-			if (Physics.Raycast(clickRay, out RaycastHit rayHit, 50f))	//Layermasking didn't work so it was removed. Retry?
+			if (mouseOverBlock)
 			{
 				rayHit.transform.gameObject.GetComponent<Picross_Block>().Deactivate();
 			}
-		}
-		else if (Input.GetMouseButtonDown(1) && Physics.Raycast(clickRay, out RaycastHit rayHit, 50f))
-		{
-			Debug.DrawRay(clickRay.origin, clickRay.direction * 50f, Color.green);
-			transform.Find((rayHit.transform.position + rayHit.normal).ToString()).gameObject.GetComponent<Picross_Block>().Reactivate(); //lol at error
-		}
-
-		if (!rotating)
-		{
-			if (Input.GetMouseButton(2))
+			else if (!keyRotating && !mouseRotating)
 			{
-				cameraFocus.rotation = Quaternion.Euler(0f, (Input.mousePosition.x - mousePrevY) * mouseSensitivityY, 0f) * cameraFocus.rotation * Quaternion.Euler((mousePrevX - Input.mousePosition.y) * mouseSensitivityX, 0f, 0f);
-
+				mousePrevX = Input.mousePosition.y;
+				mousePrevY = Input.mousePosition.x;
+				mouseRotating = true;
+				mouseButton = 0;
 			}
-			else
-			{
-				mousePrevX = 0f;
-				mousePrevY = 0f;
-
-				int hInput = 0;
-				int vInput = 0;
-
-				if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A))
-					hInput -= 1;
-				if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D))
-					hInput += 1;
-
-				if (Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.A))
-					vInput += 1;
-				if (Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.A))
-					vInput -= 1;
-
-				if (hInput != 0 || vInput != 0)
-					StartCoroutine(RotateCameraFocus(vInput * rotateY, hInput * rotateX, 0.25f));
-			}	
 		}
-		mousePrevX = Input.mousePosition.y;
-		mousePrevY = Input.mousePosition.x;
 		
+		if (Input.GetMouseButtonDown(1))
+		{
+			if (mouseOverBlock)
+			{
+				try
+				{
+					transform.Find((rayHit.transform.position + rayHit.normal).ToString()).gameObject.GetComponent<Picross_Block>().Reactivate();
+				}
+				catch
+				{
+					Debug.Log("Adding new block");
+					gameSize = gameSize + Vector3Int.RoundToInt(rayHit.normal);
+				}
+			}
+			else if (!keyRotating && !mouseRotating)
+			{
+				mousePrevX = Input.mousePosition.y;
+				mousePrevY = Input.mousePosition.x;
+				mouseRotating = true;
+				mouseButton = 1;
+			}
+		}
+
+
+		if (Input.GetMouseButtonDown(2))
+		{
+			if (!keyRotating && !mouseRotating)
+			{
+				mousePrevX = Input.mousePosition.y;
+				mousePrevY = Input.mousePosition.x;
+				mouseRotating = true;
+				mouseButton = 2;
+			}
+		}
+
+		if (mouseRotating && Input.GetMouseButtonUp(mouseButton))
+		{
+			mouseRotating = false;
+			mouseButton = -1;
+		}
+
+		if (mouseRotating)
+		{
+
+			cameraFocus.rotation = Quaternion.Euler(0f, (Input.mousePosition.x - mousePrevY) * mouseSensitivityY, 0f) * cameraFocus.rotation * Quaternion.Euler((mousePrevX - Input.mousePosition.y) * mouseSensitivityX, 0f, 0f);
+			mousePrevX = Input.mousePosition.y;
+			mousePrevY = Input.mousePosition.x;
+		}
+
+		if (!keyRotating && !mouseRotating)
+		{
+			mousePrevX = 0f;
+			mousePrevY = 0f;
+
+			int hInput = 0;
+			int vInput = 0;
+
+			if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A))
+				hInput -= 1;
+			if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D))
+				hInput += 1;
+
+			if (Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.A))
+				vInput += 1;
+			if (Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.A))
+				vInput -= 1;
+
+			if (hInput != 0 || vInput != 0)
+				StartCoroutine(RotateCameraFocus(vInput * rotateY, hInput * rotateX, 0.25f));
+		}
+
 		if (Input.mouseScrollDelta.y != 0f)
 		{
 			if (Input.mouseScrollDelta.y > 0f)
@@ -117,7 +171,7 @@ public class Picross_Master : MonoBehaviour
 
 	IEnumerator RotateCameraFocus(float xAmount, float yAmount, float duration)
 	{
-		rotating = true;
+		keyRotating = true;
 
 		float startTime = Time.time;
 		Quaternion initialRot = cameraFocus.rotation;
@@ -130,7 +184,7 @@ public class Picross_Master : MonoBehaviour
 		}
 		
 		cameraFocus.rotation = Quaternion.Euler(0f, yAmount, 0f) * initialRot * Quaternion.Euler(xAmount, 0f, 0f);
-		rotating = false;
+		keyRotating = false;
 		yield return null;
 	}
 
@@ -196,6 +250,8 @@ public class Picross_Master : MonoBehaviour
 		gameSize = new Vector3Int(int.Parse(dataStrings[1].Split(' ')[0]), int.Parse(dataStrings[1].Split(' ')[1]), int.Parse(dataStrings[1].Split(' ')[2]));
 		ConfigureCamera();
 
+		string[] activeBlocks =  dataStrings[4].Split(' '); // cast to int[] maybe ? https://stackoverflow.com/questions/2068120/c-sharp-cast-entire-array
+
 		int i = 0;
 		for (int x = 0; x < gameSize.x; x++)
 		{
@@ -214,7 +270,7 @@ public class Picross_Master : MonoBehaviour
 
 					currentScript.gridPos = new Vector3(x, y, z);
 
-					if (dataStrings[i + 4].Split(' ')[3] == "0")
+					if (activeBlocks[i] == "0")
 						currentScript.Deactivate();
 					else
 						currentScript.Reactivate();
@@ -240,16 +296,16 @@ public class Picross_Master : MonoBehaviour
 		dataStrings[2] = "nothing here";
 		dataStrings[3] = "nothing here";
 
-		int i = 4;
+		string[] activeBlocks = new string[blocks.Length];
+		int i = 0;
 		foreach (GameObject obj in blocks)
 		{
-			string temp;
 			if (obj.GetComponent<Picross_Block>().isActive == true)
-				temp = "1";
+				activeBlocks[i] = "1";
 			else
-				temp = "0";
-			
-			dataStrings[i] = obj.GetComponent<Picross_Block>().gridPos.x.ToString() + " " + obj.GetComponent<Picross_Block>().gridPos.y.ToString() + " " + obj.GetComponent<Picross_Block>().gridPos.z.ToString() + " " + temp;
+				activeBlocks[i] = "0";
+
+			dataStrings[4] = string.Join(" ", activeBlocks);
 			i++;
 		}
 

@@ -19,6 +19,8 @@ public class Picross_Block : MonoBehaviour
 		GetComponent<Collider>().enabled = false;
 
 		// Animation clip
+
+		// Check if win
 	}
 
 	public void Reactivate()
