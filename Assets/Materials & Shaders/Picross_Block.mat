@@ -21,7 +21,7 @@ Material:
     serializedVersion: 3
     m_TexEnvs: []
     m_Floats:
-    - OutlineSize: 0.05
+    - OutlineSize: 0.1
     m_Colors:
     - Color_4AB51DEA: {r: 0.755073, g: 0.7715634, b: 0.7924528, a: 0}
     - OutlineColour: {r: 0.43609816, g: 0.4716981, b: 0.46738154, a: 0}

@@ -106,3 +106,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 20e55f715b64c494796418d4b26712ef, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  isActive: 1
+  vertexColours: {x: 0, y: 0, z: 0}
+  gridPos: {x: 0, y: 0, z: 0}

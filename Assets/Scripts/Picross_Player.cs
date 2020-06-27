@@ -1,8 +1,9 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
-public class Picross_Master : MonoBehaviour
+public class Picross_Player : MonoBehaviour
 {
 	private GameObject[] blocks;
 	private LayerMask maskBlocks;
@@ -49,16 +50,6 @@ public class Picross_Master : MonoBehaviour
 		maskBlocks = 8;
 	}
 
-	// make file saving chop off empty faces on the ends
-
-	// make camera focus to object center instead of master transform
-	// make camera lerp to position when setup
-	// make camera store a percentage as it's local zdistance
-
-	// Make mouse loop across screen
-	// make keyboard camera controls look up an animation curve
-
-
 	void Update()
 	{
 		Ray blockRay = Camera.main.ScreenPointToRay(Input.mousePosition);
@@ -68,13 +59,12 @@ public class Picross_Master : MonoBehaviour
 		else
 			mouseOverBlock = false;
 
-		Debug.Log(mouseOverBlock);
-
+		// Destroy block
 		if (Input.GetMouseButtonDown(0))
 		{
 			if (mouseOverBlock)
 			{
-				rayHit.transform.gameObject.GetComponent<Picross_Block>().Deactivate();
+				rayHit.transform.gameObject.GetComponent<Picross_Block>().Destroy();
 			}
 			else if (!keyRotating && !mouseRotating)
 			{
@@ -85,19 +75,12 @@ public class Picross_Master : MonoBehaviour
 			}
 		}
 		
+		//Mark block
 		if (Input.GetMouseButtonDown(1))
 		{
 			if (mouseOverBlock)
 			{
-				try
-				{
-					transform.Find((rayHit.transform.position + rayHit.normal).ToString()).gameObject.GetComponent<Picross_Block>().Reactivate();
-				}
-				catch
-				{
-					Debug.Log("Adding new block");
-					gameSize = gameSize + Vector3Int.RoundToInt(rayHit.normal);
-				}
+				rayHit.transform.gameObject.GetComponent<Picross_Block>().Mark();
 			}
 			else if (!keyRotating && !mouseRotating)
 			{
@@ -107,7 +90,6 @@ public class Picross_Master : MonoBehaviour
 				mouseButton = 1;
 			}
 		}
-
 
 		if (Input.GetMouseButtonDown(2))
 		{
@@ -128,7 +110,6 @@ public class Picross_Master : MonoBehaviour
 
 		if (mouseRotating)
 		{
-
 			cameraFocus.rotation = Quaternion.Euler(0f, (Input.mousePosition.x - mousePrevY) * mouseSensitivityY, 0f) * cameraFocus.rotation * Quaternion.Euler((mousePrevX - Input.mousePosition.y) * mouseSensitivityX, 0f, 0f);
 			mousePrevX = Input.mousePosition.y;
 			mousePrevY = Input.mousePosition.x;
@@ -185,10 +166,9 @@ public class Picross_Master : MonoBehaviour
 		
 		cameraFocus.rotation = Quaternion.Euler(0f, yAmount, 0f) * initialRot * Quaternion.Euler(xAmount, 0f, 0f);
 		keyRotating = false;
-		yield return null;
 	}
 
-	private void ConfigureCamera()
+	private void SetupCamera()
 	{
 		cameraFocus.position = transform.position;
 		cameraFocus.rotation = Quaternion.Euler(0f, 0f, 0f);
@@ -211,55 +191,25 @@ public class Picross_Master : MonoBehaviour
 
 	}
 
-	public void GridGen()
-	{
-		GridClear();
-		blocks = new GameObject[gameSize.x * gameSize.y * gameSize.z];
-		ConfigureCamera();
-
-		int i = 0;
-		for (int x = 0; x < gameSize.x; x++)
-		{
-			for (int y = 0; y < gameSize.y; y++)
-			{
-				for (int z = 0; z < gameSize.z; z++)
-				{
-					Vector3 currentPos = new Vector3(x - (gameSize.x/2f) + 0.5f, y - (gameSize.y/2f) + 0.5f, z - (gameSize.z/2f) + 0.5f);
-					GameObject currentBlock = Instantiate(blockPrefab);
-					Picross_Block currentScript = currentBlock.GetComponent<Picross_Block>();
-
-					currentBlock.name = currentPos.ToString();
-					currentBlock.layer = 8;
-					currentBlock.transform.parent = transform;
-					currentBlock.transform.position = currentPos;
-
-					currentScript.gridPos = new Vector3(x,y,z);
-					currentScript.Reactivate();
-
-					blocks[i] = currentBlock;
-					i++;
-				}
-			}
-		}
-	}
-
 	public void GridLoad()
 	{
 		GridClear();
 		string[] dataStrings = System.IO.File.ReadAllLines(fileLocation + fileSaveName);
-		gameSize = new Vector3Int(int.Parse(dataStrings[1].Split(' ')[0]), int.Parse(dataStrings[1].Split(' ')[1]), int.Parse(dataStrings[1].Split(' ')[2]));
-		ConfigureCamera();
+		Vector3Int gridSize = new Vector3Int(int.Parse(dataStrings[1].Split(' ')[0]), int.Parse(dataStrings[1].Split(' ')[1]), int.Parse(dataStrings[1].Split(' ')[2]));
+		SetupCamera();
+
+		
 
 		string[] activeBlocks =  dataStrings[4].Split(' '); // cast to int[] maybe ? https://stackoverflow.com/questions/2068120/c-sharp-cast-entire-array
 
 		int i = 0;
-		for (int x = 0; x < gameSize.x; x++)
+		for (int x = 0; x < gridSize.x; x++)
 		{
-			for (int y = 0; y < gameSize.y; y++)
+			for (int y = 0; y < gridSize.y; y++)
 			{
-				for (int z = 0; z < gameSize.z; z++)
+				for (int z = 0; z < gridSize.z; z++)
 				{
-					Vector3 currentPos = new Vector3(x - (gameSize.x / 2f) + 0.5f, y - (gameSize.y / 2f) + 0.5f, z - (gameSize.z / 2f) + 0.5f);
+					Vector3 currentPos = new Vector3(x - (gridSize.x / 2f) + 0.5f, y - (gridSize.y / 2f) + 0.5f, z - (gridSize.z / 2f) + 0.5f);
 					GameObject currentBlock = Instantiate(blockPrefab);
 					Picross_Block currentScript = currentBlock.GetComponent<Picross_Block>();
 
@@ -273,44 +223,13 @@ public class Picross_Master : MonoBehaviour
 					if (activeBlocks[i] == "0")
 						currentScript.Deactivate();
 					else
-						currentScript.Reactivate();
+						currentScript.Activate();
 
 					blocks[i] = currentBlock;
 					i++;
 				}
 			}
 		}
-	}
-
-	public void GridSave()
-	{
-		string[] dataStrings = new string[blocks.Length + 4];
-
-		if (puzzleName == "" || puzzleName == null)
-			dataStrings[0] = "[MISSING_NAME]";
-		else
-			dataStrings[0] = puzzleName;
-
-		dataStrings[1] = gameSize.x.ToString() + " " + gameSize.y.ToString() + " " + gameSize.z.ToString();
-
-		dataStrings[2] = "nothing here";
-		dataStrings[3] = "nothing here";
-
-		string[] activeBlocks = new string[blocks.Length];
-		int i = 0;
-		foreach (GameObject obj in blocks)
-		{
-			if (obj.GetComponent<Picross_Block>().isActive == true)
-				activeBlocks[i] = "1";
-			else
-				activeBlocks[i] = "0";
-
-			dataStrings[4] = string.Join(" ", activeBlocks);
-			i++;
-		}
-
-		System.IO.File.WriteAllLines(fileLocation + fileSaveName, dataStrings);
-		Debug.Log("Saved to file");
 	}
 
 	void OnDrawGizmos()

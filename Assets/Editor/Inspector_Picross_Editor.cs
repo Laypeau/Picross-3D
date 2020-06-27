@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 
-[CustomEditor(typeof(Picross_Master))]
-public class Editor_Picross_Master : Editor
+[CustomEditor(typeof(Picross_Editor))]
+public class Editor_Picross_Editor : Editor
 {
 	public override void OnInspectorGUI()
 	{
-		Picross_Master master = (Picross_Master)target;
+		Picross_Editor master = (Picross_Editor)target;
 
 		GUILayout.BeginHorizontal();
 
