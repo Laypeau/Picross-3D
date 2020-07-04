@@ -5,8 +5,23 @@ using UnityEngine;
 public class Picross_Block : MonoBehaviour
 {
 	public bool isActive = true; //For saving
-	public Vector3Int vertexColours = Vector3Int.zero; // Maybe change to a colour datatype
-	public Vector3 gridPos;
+	public Color vertexColours = Color.red;
+	public Vector3 gridPos; //Unnecessary
+	public Mesh mesh;
+
+	private 
+
+	void Awake()
+	{
+		mesh = GetComponent<MeshFilter>().mesh;
+
+		Color[] colours = new Color[mesh.vertices.Length];
+		for (int i = 0; i < mesh.vertices.Length; i++)
+		{
+			colours[i] = vertexColours;
+		}
+		mesh.colors = colours;
+	}
 
 	public void Destroy()
 	{
@@ -20,6 +35,18 @@ public class Picross_Block : MonoBehaviour
 	public void Mark()
 	{
 
+	}
+
+	public void SetColour(Color colour)
+	{
+		vertexColours = colour;
+
+		Color[] colours = new Color[mesh.vertices.Length];
+		for (int i = 0; i < mesh.vertices.Length; i++)
+		{
+			colours[i] = vertexColours;
+		}
+		mesh.colors = colours;
 	}
 
 	public void Deactivate()

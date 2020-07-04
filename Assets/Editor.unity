@@ -249,7 +249,7 @@ Camera:
     height: 1
   near clip plane: 0.01
   far clip plane: 1000
-  field of view: 80
+  field of view: 60
   orthographic: 0
   orthographic size: 5
   m_Depth: 0
@@ -310,24 +310,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 299e5522510847e45b2cbeba6aca24f8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  minX: 0
-  maxX: 0
-  minY: 0
-  maxY: 0
-  minZ: 0
-  maxZ: 0
-  fileLocation: C:\Users\realw\Desktop\
-  fileSaveName: Save.txt
-  fileLoadName: Save.txt
-  puzzleName: 
-  gameSize: {x: 4, y: 4, z: 4}
+  gameGenSize: {x: 4, y: 4, z: 4}
   blockPrefab: {fileID: 8823054646639530745, guid: cb5aef49a8b90544a9ce102d59bababd,
     type: 3}
   cameraFocus: {fileID: 684428773}
-  minCamDistance: 0
-  zoomSensitivity: 1
+  fileLocation: C:\Users\realw\Desktop\
+  fileSaveName: Save.txt
+  puzzleSaveTitle: 
+  inputMode: 1
+  colourLMB: {r: 1, g: 0, b: 0, a: 1}
+  colourRMB: {r: 0, g: 1, b: 0, a: 1}
   mouseSensitivityX: 0.3
   mouseSensitivityY: 0.3
+  zoomSensitivity: 1
   rotateX: 15
   rotateY: 15
 --- !u!1 &1997066067

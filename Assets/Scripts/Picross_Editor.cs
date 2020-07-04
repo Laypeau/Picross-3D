@@ -1,41 +1,52 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 public class Picross_Editor : MonoBehaviour
 {
-	private List<GameObject> blocks = new List<GameObject>();
-	private int minX, maxX, minY, maxY, minZ, maxZ;
-	private LayerMask maskBlocks;
-
-	[Header("File Save/Load")]
-	public string fileLocation = @"C:\Users\realw\Desktop\";
-	public string fileSaveName = "Save.txt";
-	public string fileLoadName = "Save.txt";
-	public string puzzleSaveTitle = "";
-
-	[Header("General")]
+	#region 
 	public Vector3Int gameGenSize = Vector3Int.one; // Should be used only for GridGen()
 	public GameObject blockPrefab;
 	public Transform cameraFocus;
 	private Transform gameCamera;
+	private List<GameObject> blocks = new List<GameObject>();
+	private int minX, maxX, minY, maxY, minZ, maxZ;
+	private LayerMask maskBlocks;
 	private bool mouseOverBlock;
 
+	[Header("File Save/Load")]
+	public string fileLocation = @"C:\Users\realw\Desktop\";
+	public string fileSaveName = "Save.txt";
+	public string puzzleSaveTitle = "";
+
+	[Header("Input")]
+	public Mode inputMode = Mode.Edit;
+	public enum Mode
+	{
+		Camera = 0,
+		Edit = 1,
+		Colour = 2
+	}
+	public Color colourLMB = Color.green;
+	public Color colourRMB = Color.blue;
+
 	[Header("Camera")]
-	public float minCamDistance;
+	public float mouseSensitivityX = 0.3f;
+	public float mouseSensitivityY = 0.3f;
+	public float zoomSensitivity = 0.5f;
+	public float rotateX = 15f;
+	public float rotateY = 15f;
+
+	private float minCamDistance;
 	private float maxCamDistance;
-	public float zoomSensitivity = 1f;
 	private bool keyRotating = false;
 	private bool mouseRotating = false;
 	private int mouseButton = -1;
-	public float mouseSensitivityX = 0.3f;
-	public float mouseSensitivityY = 0.3f;
 	private float mousePrevX = 0f;
 	private float mousePrevY = 0f;
-	public float rotateX = 15f;
-	public float rotateY = 15f;
+
 	private bool blockCooldown = false;
+	#endregion
 
 	void Awake()
 	{
@@ -56,82 +67,122 @@ public class Picross_Editor : MonoBehaviour
 	{
 		Ray blockRay = Camera.main.ScreenPointToRay(Input.mousePosition);
 		Debug.DrawRay(blockRay.origin, blockRay.direction * 50f);
-		if (Physics.Raycast(blockRay, out RaycastHit rayHit, 50f)) // try using maskBlocks as a layermask
+		if (Physics.Raycast(blockRay, out RaycastHit rayHit, 50f)) // try using a layermask
 			mouseOverBlock = true;
 		else
 			mouseOverBlock = false;
 
-		// Deactivate block
 		if (Input.GetMouseButtonDown(0))
 		{
 			if (mouseOverBlock && !blockCooldown)
 			{
-				rayHit.transform.gameObject.GetComponent<Picross_Block>().Deactivate();
-				StartCoroutine(ReconfigureCamera(0.2f));
+				switch (inputMode)
+				{
+					case Mode.Edit:
+						rayHit.transform.gameObject.GetComponent<Picross_Block>().Deactivate();
+						StartCoroutine(ReconfigureCamera(0.1f));
+						break;
+					
+					case Mode.Colour:
+						rayHit.transform.gameObject.GetComponent<Picross_Block>().SetColour(colourLMB);
+						break;
+
+					case Mode.Camera:
+						mousePrevX = Input.mousePosition.y;
+						mousePrevY = Input.mousePosition.x;
+						mouseButton = 0;
+						break;
+
+					default:
+						mousePrevX = Input.mousePosition.y;
+						mousePrevY = Input.mousePosition.x;
+						mouseButton = 0;
+						break;
+				}
 			}
-			else if (!keyRotating && !mouseRotating)
+			else if (!keyRotating && mouseButton == -1)
 			{
 				mousePrevX = Input.mousePosition.y;
 				mousePrevY = Input.mousePosition.x;
-				mouseRotating = true;
 				mouseButton = 0;
 			}
 		}
 
-		//Add block
 		if (Input.GetMouseButtonDown(1))
 		{
 			if (mouseOverBlock && !blockCooldown)
 			{
-				try
+				switch (inputMode)
 				{
-					transform.Find((rayHit.transform.position + rayHit.normal).ToString()).gameObject.GetComponent<Picross_Block>().Activate();
-					StartCoroutine(ReconfigureCamera(0.2f));
-				}
-				catch
-				{
-					GameObject currentBlock = Instantiate(blockPrefab);
-					currentBlock.transform.parent = transform;
-					currentBlock.transform.position = rayHit.transform.position + rayHit.normal;
-					currentBlock.name = (rayHit.transform.position + rayHit.normal).ToString();
-					blocks.Add(currentBlock);
-					StartCoroutine(ReconfigureCamera(0.2f));
+					case Mode.Edit:
+						try
+						{
+							transform.Find((rayHit.transform.position + rayHit.normal).ToString()).gameObject.GetComponent<Picross_Block>().Activate();
+							StartCoroutine(ReconfigureCamera(0.1f));
+						}
+						catch
+						{
+							GameObject currentBlock = Instantiate(blockPrefab);
+							currentBlock.transform.parent = transform;
+							currentBlock.transform.position = rayHit.transform.position + rayHit.normal;
+							currentBlock.name = (rayHit.transform.position + rayHit.normal).ToString();
+							blocks.Add(currentBlock);
+							StartCoroutine(ReconfigureCamera(0.1f));
+						}
+						break;
+
+					case Mode.Colour:
+						rayHit.transform.gameObject.GetComponent<Picross_Block>().SetColour(colourRMB);
+						break;
+
+					case Mode.Camera:
+						mousePrevX = Input.mousePosition.y;
+						mousePrevY = Input.mousePosition.x;
+						mouseButton = 1;
+						break;
+
+					default:
+						mousePrevX = Input.mousePosition.y;
+						mousePrevY = Input.mousePosition.x;
+						mouseButton = 1;
+						break;
 				}
 			}
-			else if (!keyRotating && !mouseRotating)
+			else if (!keyRotating && mouseButton == -1)
 			{
 				mousePrevX = Input.mousePosition.y;
 				mousePrevY = Input.mousePosition.x;
-				mouseRotating = true;
 				mouseButton = 1;
 			}
 		}
 
 		if (Input.GetMouseButtonDown(2))
 		{
-			if (!keyRotating && !mouseRotating)
+			if (!keyRotating && mouseButton == -1)
 			{
 				mousePrevX = Input.mousePosition.y;
 				mousePrevY = Input.mousePosition.x;
-				mouseRotating = true;
 				mouseButton = 2;
 			}
 		}
 
-		if (mouseRotating && Input.GetMouseButtonUp(mouseButton))
+		// Move camera
+		if (mouseButton != -1)
 		{
-			mouseRotating = false;
-			mouseButton = -1;
+			if (Input.GetMouseButtonUp(mouseButton))
+			{
+				mouseButton = -1;
+			}
+			else
+			{
+				cameraFocus.rotation = Quaternion.Euler(0f, (Input.mousePosition.x - mousePrevY) * mouseSensitivityY, 0f) * cameraFocus.rotation * Quaternion.Euler((mousePrevX - Input.mousePosition.y) * mouseSensitivityX, 0f, 0f);
+				mousePrevX = Input.mousePosition.y;
+				mousePrevY = Input.mousePosition.x;
+			}
 		}
 
-		if (mouseRotating)
-		{
-			cameraFocus.rotation = Quaternion.Euler(0f, (Input.mousePosition.x - mousePrevY) * mouseSensitivityY, 0f) * cameraFocus.rotation * Quaternion.Euler((mousePrevX - Input.mousePosition.y) * mouseSensitivityX, 0f, 0f);
-			mousePrevX = Input.mousePosition.y;
-			mousePrevY = Input.mousePosition.x;
-		}
-
-		if (!keyRotating && !mouseRotating)
+		// Keyboard camera controls
+		if (!keyRotating && mouseButton == -1)
 		{
 			mousePrevX = 0f;
 			mousePrevY = 0f;
@@ -153,6 +204,7 @@ public class Picross_Editor : MonoBehaviour
 				StartCoroutine(RotateCameraFocus(vInput * rotateY, hInput * rotateX, 0.25f));
 		}
 
+		// Zoom Camera
 		if (Input.mouseScrollDelta.y != 0f)
 		{
 			if (Input.mouseScrollDelta.y > 0f)
@@ -326,9 +378,10 @@ public class Picross_Editor : MonoBehaviour
 		GridClear();
 		
 		string[] dataStrings = System.IO.File.ReadAllLines(fileLocation + fileSaveName);
-		Vector3Int gridSize = new Vector3Int(int.Parse(dataStrings[1].Split(' ')[0]), int.Parse(dataStrings[1].Split(' ')[1]), int.Parse(dataStrings[1].Split(' ')[2]));
+		Vector3Int gridSize = new Vector3Int(int.Parse(dataStrings[3].Split(' ')[0]), int.Parse(dataStrings[3].Split(' ')[1]), int.Parse(dataStrings[3].Split(' ')[2]));
 
 		string[] activeBlocks = dataStrings[4].Split(' ');
+		string[] blockColours = dataStrings[5].Split(' ');
 		try
 		{
 			int i = 0;
@@ -338,15 +391,19 @@ public class Picross_Editor : MonoBehaviour
 				{
 					for (int z = 0; z < gridSize.z; z++)
 					{
-						Vector3 currentPos = new Vector3(x, y, z);
 						GameObject currentBlock = Instantiate(blockPrefab);
 						Picross_Block currentScript = currentBlock.GetComponent<Picross_Block>();
+
+						Vector3 currentPos = new Vector3(x, y, z);
+						string[] RGB = blockColours[i].Split(',');
+						Color currentColour = new Color(float.Parse(RGB[0]), float.Parse(RGB[1]), float.Parse(RGB[2]));
 
 						currentBlock.name = currentPos.ToString();
 						currentBlock.layer = 8;
 						currentBlock.transform.parent = transform;
 						currentBlock.transform.position = currentPos;
-
+						
+						currentScript.SetColour(currentColour);
 						currentScript.gridPos = new Vector3(x, y, z);
 
 						if (activeBlocks[i] == "0")
@@ -372,19 +429,18 @@ public class Picross_Editor : MonoBehaviour
 
 	public void GridSave()
 	{
-		string[] dataStrings = new string[5];
+		string[] dataStrings = new string[6];
 		blocks.Sort(new BlockComparer());
 
 		if (puzzleSaveTitle == "" || puzzleSaveTitle == null)
 			dataStrings[0] = "[MISSING_NAME]";
 		else
 			dataStrings[0] = puzzleSaveTitle;
+		dataStrings[1] = "[AUTHOR_NAME]";
+		dataStrings[2] = "[SOLVE_TIME]";
 
 		Vector3 size = GridCalculateSize();
-		dataStrings[1] = size.x.ToString() + " " + size.y.ToString() + " " + size.z.ToString();
-
-		dataStrings[2] = "nothing here";
-		dataStrings[3] = "nothing here";
+		dataStrings[3] = size.x.ToString() + " " + size.y.ToString() + " " + size.z.ToString();
 
 		string[] activeBlocks = new string[(maxX - minX) * (maxY - minY) * (maxZ - minZ)];
 		int i = 0;
@@ -412,7 +468,30 @@ public class Picross_Editor : MonoBehaviour
 		}
 		dataStrings[4] = string.Join(" ", activeBlocks);
 
-		//Vertex colours
+		string[] blockColours = new string[(maxX - minX) * (maxY - minY) * (maxZ - minZ)];
+		i = 0;
+		for (int x = minX; x < maxX; x++)
+		{
+			for (int y = minY; y < maxY; y++)
+			{
+				for (int z = minZ; z < maxZ; z++)
+				{
+					string name = new Vector3(x, y, z).ToString();
+					try
+					{
+						Color colour = transform.Find(name).GetComponent<Picross_Block>().vertexColours;
+						blockColours[i] = $"{colour.r},{colour.g},{colour.b}";
+					}
+					catch
+					{
+						blockColours[i] = "1,1,1";
+					}
+					i++;
+				}
+			}
+		}
+		dataStrings[5] = string.Join(" ", blockColours);
+
 
 		System.IO.File.WriteAllLines(fileLocation + fileSaveName, dataStrings);
 		Debug.Log("Saved to file");

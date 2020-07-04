@@ -107,5 +107,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   isActive: 1
-  vertexColours: {x: 0, y: 0, z: 0}
+  vertexColours:
+    serializedVersion: 2
+    rgba: 4278250495
   gridPos: {x: 0, y: 0, z: 0}
+  mesh: {fileID: 0}
