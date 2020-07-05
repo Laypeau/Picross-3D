@@ -31,11 +31,16 @@ public class Picross_Editor : MonoBehaviour
 	public Color colourRMB = Color.blue;
 
 	[Header("Camera")]
-	public float mouseSensitivityX = 0.3f;
-	public float mouseSensitivityY = 0.3f;
+	public AnimationCurve posLerpCurve = AnimationCurve.EaseInOut(0,0,1,1);
+	public float mouseSensitivityX = 0.2f;
+	public float mouseSensitivityY = 0.2f;
+	public float mouseSlideMultiplier = 7f;
 	public float zoomSensitivity = 0.5f;
 	public float rotateX = 15f;
 	public float rotateY = 15f;
+	public AnimationCurve keyRotateCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
+
+	private Vector2 velocity;
 
 	private float minCamDistance;
 	private float maxCamDistance;
@@ -166,12 +171,13 @@ public class Picross_Editor : MonoBehaviour
 			}
 		}
 
-		// Move camera
+		// Move camera + Camera slide
 		if (mouseButton != -1)
 		{
 			if (Input.GetMouseButtonUp(mouseButton))
 			{
 				mouseButton = -1;
+				velocity = new Vector2(mousePrevX - Input.mousePosition.y, Input.mousePosition.x - mousePrevY);
 			}
 			else
 			{
@@ -179,6 +185,10 @@ public class Picross_Editor : MonoBehaviour
 				mousePrevX = Input.mousePosition.y;
 				mousePrevY = Input.mousePosition.x;
 			}
+		}
+		else
+		{
+			cameraFocus.rotation = Quaternion.Euler(0f, velocity.y * mouseSensitivityY * mouseSlideMultiplier * Time.deltaTime, 0f) * cameraFocus.rotation * Quaternion.Euler(velocity.x * mouseSensitivityX * mouseSlideMultiplier * Time.deltaTime, 0f, 0f);
 		}
 
 		// Keyboard camera controls
@@ -218,6 +228,11 @@ public class Picross_Editor : MonoBehaviour
 		}
 	}
 
+	void FixedUpdate()
+	{
+		velocity = velocity * 0.95f; //maybe expose this field
+	}
+
 	IEnumerator RotateCameraFocus(float xAmount, float yAmount, float duration)
 	{
 		keyRotating = true;
@@ -225,10 +240,10 @@ public class Picross_Editor : MonoBehaviour
 		float startTime = Time.time;
 		Quaternion initialRot = cameraFocus.rotation;
 
-		while (startTime + duration >= Time.time) //make it evaluate an animation curve
+		while (startTime + duration >= Time.time)
 		{
 			float percentage = (Time.time - startTime) / duration;
-			cameraFocus.rotation = Quaternion.Euler(0f, yAmount * percentage, 0f) * initialRot * Quaternion.Euler(xAmount * percentage, 0f, 0f);
+			cameraFocus.rotation = Quaternion.Euler(0f, yAmount * keyRotateCurve.Evaluate(percentage), 0f) * initialRot * Quaternion.Euler(xAmount * keyRotateCurve.Evaluate(percentage), 0f, 0f);
 			yield return null;
 		}
 
@@ -255,10 +270,10 @@ public class Picross_Editor : MonoBehaviour
 
 			cameraFocus.position = Vector3.Lerp(initialPos, newPos, percentage);
 
-			minCamDistance = Mathf.Lerp(initialMinCamDistance, -1 * (gameSize + 1f), percentage);
-			maxCamDistance = Mathf.Lerp(initialMaxCamDistance, -3 * (gameSize + 1f), percentage);
+			minCamDistance = Mathf.Lerp(initialMinCamDistance, -1 * (gameSize + 1f), posLerpCurve.Evaluate(percentage));
+			maxCamDistance = Mathf.Lerp(initialMaxCamDistance, -3 * (gameSize + 1f), posLerpCurve.Evaluate(percentage));
 
-			if (gameCamera.localPosition.z > minCamDistance + 1)
+			if (gameCamera.localPosition.z > minCamDistance)
 				gameCamera.localPosition = new Vector3(0f, 0f, minCamDistance);
 
 			if (gameCamera.localPosition.z < maxCamDistance)
@@ -272,7 +287,7 @@ public class Picross_Editor : MonoBehaviour
 		minCamDistance = -1 * (gameSize + 1f);
 		maxCamDistance = -3 * (gameSize + 1f);
 		
-		if (gameCamera.localPosition.z > minCamDistance + 1)
+		if (gameCamera.localPosition.z > minCamDistance)
 			gameCamera.localPosition = new Vector3(0f, 0f, minCamDistance);
 
 		if (gameCamera.localPosition.z < maxCamDistance)
